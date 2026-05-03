@@ -1,0 +1,623 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>B2B CRM</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:system-ui,sans-serif;font-size:14px;background:#f0f4f9;color:#1a1a2e;min-height:100vh}
+.app{display:flex;height:100vh;overflow:hidden}
+
+/* Sidebar */
+.sidebar{width:210px;background:linear-gradient(175deg,#0f2744 0%,#185FA5 100%);display:flex;flex-direction:column;padding:0;flex-shrink:0}
+.logo{padding:22px 20px 18px;font-size:16px;font-weight:600;color:#fff;border-bottom:1px solid rgba(255,255,255,.1);display:flex;align-items:center;gap:8px}
+.logo-dot{width:8px;height:8px;border-radius:50%;background:#60b8ff}
+.nav-section{padding:12px 12px 4px;font-size:10px;color:rgba(255,255,255,.4);letter-spacing:1px;text-transform:uppercase}
+.nav-item{display:flex;align-items:center;gap:10px;padding:9px 14px;margin:2px 8px;cursor:pointer;color:rgba(255,255,255,.65);font-size:13px;transition:all .15s;border-radius:8px}
+.nav-item:hover{background:rgba(255,255,255,.1);color:#fff}
+.nav-item.active{background:rgba(255,255,255,.18);color:#fff;font-weight:500}
+.nav-icon{font-size:14px;width:16px;text-align:center;flex-shrink:0}
+.sidebar-footer{margin-top:auto;padding:16px;border-top:1px solid rgba(255,255,255,.1);font-size:11px;color:rgba(255,255,255,.35)}
+
+/* Main */
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden}
+.topbar{background:#fff;border-bottom:1px solid #e4eaf2;padding:0 24px;display:flex;align-items:center;justify-content:space-between;height:56px;flex-shrink:0}
+.topbar-left{display:flex;align-items:center;gap:12px}
+.topbar-title{font-size:15px;font-weight:500;color:#1a1a2e}
+.topbar-right{display:flex;gap:8px;align-items:center}
+.content{flex:1;overflow-y:auto;padding:22px 24px;background:#f0f4f9}
+
+/* Cards */
+.kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:22px}
+.kpi-card{background:#fff;border-radius:12px;padding:16px 18px;border:1px solid #e4eaf2;position:relative;overflow:hidden}
+.kpi-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:var(--accent,#378ADD)}
+.kpi-accent{--accent:#378ADD}
+.kpi-green{--accent:#27a06a}
+.kpi-amber{--accent:#e09b20}
+.kpi-purple{--accent:#7b5cf5}
+.kpi-label{font-size:11px;color:#8a9bb0;margin-bottom:8px;font-weight:500;text-transform:uppercase;letter-spacing:.5px}
+.kpi-value{font-size:24px;font-weight:600;color:#1a1a2e;line-height:1}
+.kpi-sub{font-size:11px;color:#8a9bb0;margin-top:6px}
+
+/* Panels */
+.panel{background:#fff;border-radius:12px;border:1px solid #e4eaf2;overflow:hidden}
+.panel-header{padding:14px 18px;border-bottom:1px solid #f0f4f9;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px}
+.panel-title{font-size:13px;font-weight:500;color:#1a1a2e}
+.filter-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.search-box{padding:6px 11px;border:1px solid #dde3ed;border-radius:7px;font-size:12px;width:170px;outline:none;color:#1a1a2e}
+.search-box:focus{border-color:#378ADD;box-shadow:0 0 0 2px rgba(55,138,221,.12)}
+.filter-select{padding:6px 10px;border:1px solid #dde3ed;border-radius:7px;font-size:12px;outline:none;color:#1a1a2e;background:#fff}
+.filter-select:focus{border-color:#378ADD}
+
+/* Table */
+.tbl-wrap{overflow-x:auto;width:100%}
+table{width:100%;border-collapse:collapse;font-size:12px;min-width:600px}
+th{background:#f7f9fc;padding:9px 14px;text-align:left;font-weight:500;color:#637286;border-bottom:1px solid #edf1f7;white-space:nowrap;font-size:11px;text-transform:uppercase;letter-spacing:.4px}
+td{padding:9px 14px;border-bottom:1px solid #f3f5f9;color:#2d3748;vertical-align:middle;white-space:nowrap}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:#f7faff}
+.empty-state{text-align:center;padding:48px;color:#aab4c4;font-size:13px}
+
+/* Badges */
+.badge{display:inline-block;padding:3px 9px;border-radius:20px;font-size:11px;font-weight:500;white-space:nowrap}
+.b-shipped,.b-delivered,.b-yes{background:#e6f7ef;color:#1a8a55}
+.b-transit{background:#e6f1fb;color:#185FA5}
+.b-pending,.b-notyet{background:#fef3e2;color:#b07210}
+.b-no{background:#fde8e8;color:#c0392b}
+
+/* Buttons */
+.btn{padding:7px 14px;border-radius:7px;border:1px solid #dde3ed;background:#fff;cursor:pointer;font-size:12px;color:#444;transition:all .15s;font-family:inherit}
+.btn:hover{background:#f5f8ff;border-color:#b8cfe8}
+.btn-primary{background:#185FA5;color:#fff;border-color:#185FA5}
+.btn-primary:hover{background:#0f4880}
+.btn-sm{padding:4px 10px;font-size:11px;border-radius:6px}
+.btn-del{color:#c0392b;border-color:#f5c6c6}
+.btn-del:hover{background:#fde8e8}
+
+/* Client cards */
+.client-grid{display:flex;flex-direction:column;gap:10px}
+.client-card{background:#fff;border-radius:12px;border:1px solid #e4eaf2;padding:14px 20px;cursor:pointer;transition:all .18s;position:relative;display:flex;align-items:center;gap:0;overflow:hidden}
+.client-card::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:#378ADD;transform:scaleY(0);transition:transform .2s;transform-origin:center}
+.client-card:hover{border-color:#b8d4f0;box-shadow:0 4px 16px rgba(55,138,221,.1)}
+.client-card:hover::before{transform:scaleY(1)}
+.client-name{font-size:13px;font-weight:500;color:#1a1a2e;width:180px;flex-shrink:0}
+.client-stats{display:flex;flex:1}
+.cstat{flex:1;text-align:center;padding:4px 8px;border-left:1px solid #f0f4f9}
+.cstat-val{font-size:15px;font-weight:600;color:#185FA5}
+.cstat-lbl{font-size:10px;color:#8a9bb0;margin-top:2px;text-transform:uppercase;letter-spacing:.3px}
+
+/* Detail view */
+.back-btn{display:inline-flex;align-items:center;gap:5px;font-size:12px;color:#185FA5;cursor:pointer;margin-bottom:14px;padding:5px 0}
+.back-btn:hover{text-decoration:underline}
+.detail-header{background:#fff;border-radius:12px;border:1px solid #e4eaf2;padding:18px 22px;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between}
+.detail-kpi{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:16px}
+.detail-kpi .kpi-card{margin:0}
+.chip{display:inline-block;background:#e6f1fb;color:#185FA5;border-radius:20px;padding:2px 9px;font-size:11px;font-weight:500;margin-left:6px}
+
+/* Modal */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(10,20,40,.45);z-index:100;align-items:center;justify-content:center}
+.modal-overlay.open{display:flex}
+.modal{background:#fff;border-radius:14px;padding:26px;width:700px;max-height:88vh;overflow-y:auto;border-top:4px solid #185FA5}
+.modal h3{font-size:15px;font-weight:500;margin-bottom:18px;color:#1a1a2e}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.form-group{display:flex;flex-direction:column;gap:5px}
+.form-group.full{grid-column:1/-1}
+.form-group label{font-size:11px;color:#637286;font-weight:500;text-transform:uppercase;letter-spacing:.4px}
+.form-group input,.form-group select,.form-group textarea{padding:8px 11px;border:1px solid #dde3ed;border-radius:7px;font-size:12px;outline:none;font-family:inherit;color:#1a1a2e}
+.form-group input:focus,.form-group select:focus,.form-group textarea:focus{border-color:#378ADD;box-shadow:0 0 0 2px rgba(55,138,221,.12)}
+.modal-footer{display:flex;justify-content:flex-end;gap:8px;margin-top:20px;padding-top:16px;border-top:1px solid #f0f4f9}
+
+/* Tabs */
+.tab-bar{display:flex;background:#fff;border-radius:12px 12px 0 0;border:1px solid #e4eaf2;border-bottom:none;padding:0 18px}
+.tab{padding:12px 18px;cursor:pointer;font-size:13px;color:#8a9bb0;border-bottom:2px solid transparent;transition:all .15s}
+.tab.active{color:#185FA5;border-bottom-color:#185FA5;font-weight:500}
+.tab-panel{background:#fff;border-radius:0 0 12px 12px;border:1px solid #e4eaf2;border-top:none;padding:18px}
+
+/* Present mode */
+.present-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:22px;padding-bottom:16px;border-bottom:1px solid #e4eaf2}
+.present-title{font-size:20px;font-weight:600;color:#1a1a2e}
+.present-sub{font-size:12px;color:#8a9bb0;margin-top:4px}
+.present-table th{background:#185FA5;color:#fff;padding:11px 16px;font-size:12px;text-transform:none;letter-spacing:0}
+.present-table td{padding:11px 16px;font-size:13px}
+.present-table tr:nth-child(even) td{background:#f7faff}
+.present-table tr:hover td{background:#e6f1fb}
+
+/* Revenue breakdown inside dashboard */
+.rev-row{display:flex;align-items:center;padding:10px 0;border-bottom:1px solid #f3f5f9;gap:12px}
+.rev-row:last-child{border-bottom:none}
+.rev-bar-bg{flex:1;height:6px;background:#edf1f7;border-radius:4px;overflow:hidden}
+.rev-bar-fill{height:100%;background:linear-gradient(90deg,#378ADD,#60b8ff);border-radius:4px;transition:width .4s}
+.rev-name{width:130px;font-size:12px;font-weight:500;color:#2d3748;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rev-val{width:80px;font-size:12px;font-weight:600;color:#185FA5;text-align:right}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="sidebar">
+    <div class="logo"><span class="logo-dot"></span>B2B CRM</div>
+    <div class="nav-section">Main</div>
+    <div class="nav-item active" onclick="showPage('dashboard')" id="nav-dashboard"><span class="nav-icon">⬡</span>Dashboard</div>
+    <div class="nav-item" onclick="showPage('clients')" id="nav-clients"><span class="nav-icon">◎</span>Clients</div>
+    <div class="nav-section">Modules</div>
+    <div class="nav-item" onclick="showPage('orders')" id="nav-orders"><span class="nav-icon">◈</span>Order Schedule</div>
+    <div class="nav-item" onclick="showPage('products')" id="nav-products"><span class="nav-icon">◇</span>Product List</div>
+    <div class="nav-item" onclick="showPage('shipping')" id="nav-shipping"><span class="nav-icon">▷</span>Shipping Schedule</div>
+    <div class="sidebar-footer">B2B CRM v1.0</div>
+  </div>
+
+  <div class="main">
+    <div class="topbar">
+      <div class="topbar-left">
+        <div class="topbar-title" id="page-title">Dashboard</div>
+      </div>
+      <div class="topbar-right" id="topbar-actions"></div>
+    </div>
+
+    <!-- Dashboard -->
+    <div id="page-dashboard" class="content">
+      <div class="kpi-grid" id="dash-cards"></div>
+      <!-- Revenue breakdown: horizontal cards -->
+      <div class="panel" style="margin-bottom:16px">
+        <div class="panel-header">
+          <span class="panel-title">Revenue by Customer</span>
+        </div>
+        <div style="padding:16px 18px;display:flex;gap:16px;flex-wrap:wrap" id="rev-breakdown"></div>
+      </div>
+      <!-- Recent orders full width -->
+      <div class="panel">
+        <div class="panel-header">
+          <span class="panel-title">Recent Orders</span>
+          <div class="filter-row">
+            <select class="filter-select" id="dash-cust-filter" onchange="renderDashboard()"><option value="">All Customers</option></select>
+          </div>
+        </div>
+        <div class="tbl-wrap">
+          <table id="dash-orders-table"><thead><tr><th>PO</th><th>Customer</th><th>Product</th><th>Total</th><th>Status</th><th>ETD</th></tr></thead><tbody></tbody></table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Clients -->
+    <div id="page-clients" class="content" style="display:none">
+      <div id="clients-list-view">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+          <input class="search-box" id="client-search" placeholder="Search clients..." oninput="renderClients()" style="width:220px">
+        </div>
+        <div class="client-grid" id="client-cards"></div>
+      </div>
+      <div id="client-detail-view" style="display:none"></div>
+    </div>
+
+    <!-- Orders -->
+    <div id="page-orders" class="content" style="display:none">
+      <div class="panel">
+        <div class="panel-header">
+          <div class="filter-row">
+            <input class="search-box" id="order-search" placeholder="Search..." oninput="renderOrders()">
+            <select class="filter-select" id="order-filter-customer" onchange="renderOrders()"><option value="">All Customers</option></select>
+            <select class="filter-select" id="order-filter-status" onchange="renderOrders()"><option value="">All Status</option><option>Shipped</option><option>Not Yet</option><option>In Transit</option></select>
+            <select class="filter-select" id="order-filter-month" onchange="renderOrders()"><option value="">All Months</option><option>January</option><option>February</option><option>March</option><option>April</option><option>May</option><option>June</option><option>July</option><option>August</option><option>September</option><option>October</option><option>November</option><option>December</option></select>
+          </div>
+          <button class="btn btn-primary" onclick="openModal('order')">+ Add Order</button>
+        </div>
+        <div class="tbl-wrap">
+          <table id="orders-table"><thead><tr>
+            <th>PO</th><th>PO Date</th><th>Customer</th><th>Product</th><th>Price</th><th>Qty</th><th>Total</th>
+            <th>Invoice</th><th>Pmt Date</th><th>Month</th><th>Cust ETA</th>
+            <th>PO→Vendor</th><th>Vendor Ship</th><th>OQC</th><th>ETD</th>
+            <th>Incoterms</th><th>Status</th><th>On-time</th><th>Remarks</th><th>Actions</th>
+          </tr></thead><tbody></tbody></table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Products -->
+    <div id="page-products" class="content" style="display:none">
+      <div class="panel">
+        <div class="panel-header">
+          <div class="filter-row">
+            <input class="search-box" id="prod-search" placeholder="Search..." oninput="renderProducts()">
+            <select class="filter-select" id="prod-filter-customer" onchange="renderProducts()"><option value="">All Customers</option></select>
+            <select class="filter-select" id="prod-filter-cat" onchange="renderProducts()"><option value="">All Categories</option></select>
+          </div>
+          <button class="btn btn-primary" onclick="openModal('product')">+ Add Product</button>
+        </div>
+        <div class="tbl-wrap">
+          <table id="products-table"><thead><tr>
+            <th>Product</th><th>Category</th><th>Customer</th><th>Vendor</th><th>Price</th><th>Cost</th>
+            <th>Margin</th><th>MOQ</th><th>Lead Time</th><th>Size</th><th>Weight</th>
+            <th>HS Code</th><th>Origin</th><th>Actions</th>
+          </tr></thead><tbody></tbody></table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Shipping -->
+    <div id="page-shipping" class="content" style="display:none">
+      <div class="tab-bar">
+        <div class="tab active" id="tab-manage" onclick="switchShipTab('manage')">Manage</div>
+        <div class="tab" id="tab-present" onclick="switchShipTab('present')">Presentation Mode</div>
+      </div>
+      <div id="ship-manage" class="tab-panel">
+        <div class="panel-header" style="padding:0 0 14px;border-bottom:1px solid #f0f4f9;margin-bottom:14px">
+          <div class="filter-row">
+            <input class="search-box" id="ship-search" placeholder="Search..." oninput="renderShipping()">
+            <select class="filter-select" id="ship-filter-customer" onchange="renderShipping()"><option value="">All Customers</option></select>
+            <select class="filter-select" id="ship-filter-status" onchange="renderShipping()"><option value="">All Status</option><option>Pending</option><option>In Transit</option><option>Delivered</option></select>
+          </div>
+          <button class="btn btn-primary" onclick="openModal('shipping')">+ Add Shipment</button>
+        </div>
+        <div class="tbl-wrap">
+          <table id="shipping-table"><thead><tr>
+            <th>PO</th><th>Customer</th><th>Product</th><th>Qty</th><th>Total</th><th>ETA</th><th>ETD</th>
+            <th>Carrier</th><th>Tracking</th><th>Port</th><th>Destination</th><th>Status</th><th>Actions</th>
+          </tr></thead><tbody></tbody></table>
+        </div>
+      </div>
+      <div id="ship-present" class="tab-panel" style="display:none">
+        <div class="present-header">
+          <div>
+            <div class="present-title">Shipping Schedule</div>
+            <div class="present-sub" id="present-date"></div>
+          </div>
+          <div style="display:flex;gap:8px">
+            <select class="filter-select" id="present-filter-customer" onchange="renderPresent()"><option value="">All Customers</option></select>
+            <select class="filter-select" id="present-filter" onchange="renderPresent()"><option value="">All Status</option><option>Pending</option><option>In Transit</option><option>Delivered</option></select>
+            <button class="btn btn-primary" onclick="window.print()">Print</button>
+          </div>
+        </div>
+        <div class="tbl-wrap">
+          <table class="present-table" id="present-table" style="width:100%;border-collapse:collapse">
+            <thead><tr><th>PO</th><th>Customer</th><th>Product</th><th>Qty</th><th>Total</th><th>ETA</th><th>ETD</th><th>Carrier</th><th>Port</th><th>Destination</th><th>Status</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-overlay">
+  <div class="modal" id="modal-content"></div>
+</div>
+
+<script>
+const state={
+  orders:[
+    {id:1,po:'PO1000627632',poDate:'2026/04/01',customer:'Oring Systems',product:'CL_Power Adapter',price:50,qty:500,total:25000,invoice:'INV-001',paymentDate:'',salesMonth:'May',custEta:'5/15',poToVendor:'',vendorShip:'04/29',oqc:'Johnny',etd:'5/1',incoterms:'FOB',status:'Shipped',onTime:'Yes',remarks:''},
+    {id:2,po:'PO1000627633',poDate:'2026/04/10',customer:'TechCore Ltd',product:'USB-C Hub Pro',price:35,qty:200,total:7000,invoice:'INV-002',paymentDate:'',salesMonth:'May',custEta:'5/20',poToVendor:'',vendorShip:'05/05',oqc:'Mary',etd:'5/18',incoterms:'EXW',status:'Not Yet',onTime:'No',remarks:'Awaiting vendor'},
+    {id:3,po:'PO1000627634',poDate:'2026/03/22',customer:'Global Tech',product:'HDMI Switch 4K',price:28,qty:150,total:4200,invoice:'INV-003',paymentDate:'2026/04/20',salesMonth:'April',custEta:'4/30',poToVendor:'',vendorShip:'04/18',oqc:'Johnny',etd:'4/28',incoterms:'CIF',status:'Shipped',onTime:'Yes',remarks:''},
+    {id:4,po:'PO1000627635',poDate:'2026/04/15',customer:'Oring Systems',product:'CL_Power Adapter',price:50,qty:300,total:15000,invoice:'INV-004',paymentDate:'',salesMonth:'May',custEta:'5/25',poToVendor:'',vendorShip:'05/10',oqc:'Johnny',etd:'5/22',incoterms:'FOB',status:'In Transit',onTime:'Yes',remarks:'Rush order'}
+  ],
+  products:[
+    {id:1,product:'CL_Power Adapter',category:'Power',customer:'Oring Systems',vendor:'PowerTech Co.',price:50,cost:30,moq:100,leadTime:14,size:'10x6x4cm',weight:'250g',hsCode:'8504.40',origin:'Taiwan'},
+    {id:2,product:'USB-C Hub Pro',category:'Connectivity',customer:'TechCore Ltd',vendor:'ConnectPro',price:35,cost:18,moq:50,leadTime:21,size:'12x4x2cm',weight:'180g',hsCode:'8473.30',origin:'China'},
+    {id:3,product:'HDMI Switch 4K',category:'Display',customer:'Global Tech',vendor:'DisplayTech',price:28,cost:14,moq:100,leadTime:18,size:'8x5x2cm',weight:'150g',hsCode:'8536.90',origin:'Taiwan'}
+  ],
+  shipping:[
+    {id:1,po:'PO1000627632',customer:'Oring Systems',product:'CL_Power Adapter',qty:500,total:25000,eta:'2026-05-15',etd:'2026-05-01',carrier:'Evergreen',tracking:'EVG20260501X',portLoading:'Kaohsiung',destination:'Los Angeles',status:'In Transit'},
+    {id:2,po:'PO1000627634',customer:'Global Tech',product:'HDMI Switch 4K',qty:150,total:4200,eta:'2026-04-30',etd:'2026-04-28',carrier:'COSCO',tracking:'CSC20260428Y',portLoading:'Keelung',destination:'Hamburg',status:'Delivered'},
+    {id:3,po:'PO1000627633',customer:'TechCore Ltd',product:'USB-C Hub Pro',qty:200,total:7000,eta:'2026-05-20',etd:'2026-05-18',carrier:'Yang Ming',tracking:'',portLoading:'Taichung',destination:'Rotterdam',status:'Pending'},
+    {id:4,po:'PO1000627635',customer:'Oring Systems',product:'CL_Power Adapter',qty:300,total:15000,eta:'2026-05-25',etd:'2026-05-22',carrier:'Evergreen',tracking:'EVG20260522Z',portLoading:'Kaohsiung',destination:'Los Angeles',status:'Pending'}
+  ],
+  nextId:{orders:5,products:4,shipping:5},
+  editId:null,editType:null
+};
+
+function allCustomers(){return[...new Set([...state.orders.map(o=>o.customer),...state.products.map(p=>p.customer),...state.shipping.map(s=>s.customer)].filter(Boolean))].sort()}
+
+function badge(s){
+  const m={'Shipped':'b-shipped','Not Yet':'b-notyet','In Transit':'b-transit','Pending':'b-pending','Delivered':'b-delivered','Yes':'b-yes','No':'b-no'};
+  return`<span class="badge ${m[s]||'b-notyet'}">${s}</span>`;
+}
+
+function syncCustomerDropdowns(){
+  const customers=allCustomers();
+  ['order-filter-customer','prod-filter-customer','ship-filter-customer','present-filter-customer','dash-cust-filter'].forEach(id=>{
+    const el=document.getElementById(id);if(!el)return;
+    const cur=el.value;
+    el.innerHTML='<option value="">All Customers</option>'+customers.map(c=>`<option${cur===c?' selected':''}>${c}</option>`).join('');
+  });
+}
+
+function clientStats(name){
+  const orders=state.orders.filter(o=>o.customer===name);
+  return{
+    revenue:orders.reduce((a,o)=>a+o.total,0),
+    orders:orders.length,
+    shipments:state.shipping.filter(s=>s.customer===name).length,
+    products:state.products.filter(p=>p.customer===name).length
+  };
+}
+
+function showPage(p){
+  ['dashboard','clients','orders','products','shipping'].forEach(x=>{
+    document.getElementById('page-'+x).style.display=x===p?'':'none';
+    document.getElementById('nav-'+x).classList.toggle('active',x===p);
+  });
+  document.getElementById('page-title').textContent={dashboard:'Dashboard',clients:'Clients',orders:'Order Schedule',products:'Product List',shipping:'Shipping Schedule'}[p];
+  syncCustomerDropdowns();
+  if(p==='dashboard')renderDashboard();
+  if(p==='clients')renderClients();
+  if(p==='orders')renderOrders();
+  if(p==='products')renderProducts();
+  if(p==='shipping'){renderShipping();renderPresent();}
+}
+
+function renderDashboard(){
+  syncCustomerDropdowns();
+  const custF=document.getElementById('dash-cust-filter').value;
+  const filtOrders=custF?state.orders.filter(o=>o.customer===custF):state.orders;
+  const filtShip=custF?state.shipping.filter(s=>s.customer===custF):state.shipping;
+
+  const totalRev=filtOrders.reduce((a,o)=>a+o.total,0);
+  const shipped=filtOrders.filter(o=>o.status==='Shipped').length;
+  const onTime=filtOrders.filter(o=>o.onTime==='Yes').length;
+  const active=filtShip.filter(s=>s.status==='Pending'||s.status==='In Transit').length;
+
+  document.getElementById('dash-cards').innerHTML=`
+    <div class="kpi-card kpi-accent"><div class="kpi-label">Total Revenue</div><div class="kpi-value">$${totalRev.toLocaleString()}</div><div class="kpi-sub">${filtOrders.length} orders${custF?' · '+custF:''}</div></div>
+    <div class="kpi-card kpi-green"><div class="kpi-label">Shipped Orders</div><div class="kpi-value">${shipped}</div><div class="kpi-sub">of ${filtOrders.length} total</div></div>
+    <div class="kpi-card kpi-purple"><div class="kpi-label">Active Shipments</div><div class="kpi-value">${active}</div><div class="kpi-sub">pending / in transit</div></div>
+    <div class="kpi-card kpi-amber"><div class="kpi-label">On-time Rate</div><div class="kpi-value">${filtOrders.length?Math.round(onTime/filtOrders.length*100):0}%</div><div class="kpi-sub">${onTime} on time</div></div>`;
+
+  const tb=document.querySelector('#dash-orders-table tbody');
+  tb.innerHTML=filtOrders.slice().reverse().slice(0,6).map(o=>`<tr><td>${o.po}</td><td>${o.customer}</td><td>${o.product}</td><td><b>$${o.total.toLocaleString()}</b></td><td>${badge(o.status)}</td><td>${o.etd}</td></tr>`).join('')||'<tr><td colspan="6" class="empty-state">No orders</td></tr>';
+
+  const customers=allCustomers();
+  document.getElementById('rev-breakdown').innerHTML=customers.map(c=>{
+    const s=clientStats(c);
+    return`<div style="background:#f0f4f9;border-radius:10px;padding:14px 18px;min-width:160px;flex:1;border-top:3px solid #378ADD">
+      <div style="font-size:11px;color:#8a9bb0;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">${c}</div>
+      <div style="font-size:20px;font-weight:600;color:#185FA5">${s.revenue.toLocaleString()}</div>
+      <div style="display:flex;gap:12px;margin-top:8px;font-size:11px;color:#637286">
+        <span>${s.orders} orders</span>
+        <span>${s.shipments} shipments</span>
+        <span>${s.products} products</span>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function renderClients(){
+  const q=(document.getElementById('client-search').value||'').toLowerCase();
+  const customers=allCustomers().filter(c=>!q||c.toLowerCase().includes(q));
+  document.getElementById('client-cards').innerHTML=customers.map(c=>{
+    const s=clientStats(c);
+    return`<div class="client-card" onclick="showClientDetail('${c}')">
+      <div class="client-name">${c}</div>
+      <div class="client-stats">
+        <div class="cstat"><div class="cstat-val">${s.revenue>=1000?(s.revenue/1000).toFixed(0)+'k':s.revenue}</div><div class="cstat-lbl">Revenue</div></div>
+        <div class="cstat"><div class="cstat-val">${s.orders}</div><div class="cstat-lbl">Orders</div></div>
+        <div class="cstat"><div class="cstat-val">${s.shipments}</div><div class="cstat-lbl">Shipments</div></div>
+        <div class="cstat"><div class="cstat-val">${s.products}</div><div class="cstat-lbl">Products</div></div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function showClientDetail(name){
+  document.getElementById('clients-list-view').style.display='none';
+  const dv=document.getElementById('client-detail-view');
+  dv.style.display='';
+  const s=clientStats(name);
+  const orders=state.orders.filter(o=>o.customer===name);
+  const products=state.products.filter(p=>p.customer===name);
+  const shipments=state.shipping.filter(sh=>sh.customer===name);
+  dv.innerHTML=`
+    <div class="back-btn" onclick="backToClients()">&#8592; All Clients</div>
+    <div class="detail-header">
+      <div style="font-size:18px;font-weight:600;color:#1a1a2e">${name}</div>
+      <span class="badge b-transit">${s.orders} orders</span>
+    </div>
+    <div class="detail-kpi">
+      <div class="kpi-card kpi-accent"><div class="kpi-label">Total Revenue</div><div class="kpi-value">$${s.revenue.toLocaleString()}</div><div class="kpi-sub">${s.orders} orders</div></div>
+      <div class="kpi-card kpi-purple"><div class="kpi-label">Shipments</div><div class="kpi-value">${s.shipments}</div></div>
+      <div class="kpi-card kpi-green"><div class="kpi-label">Products</div><div class="kpi-value">${s.products}</div></div>
+    </div>
+    <div class="panel" style="margin-bottom:14px">
+      <div class="panel-header"><span class="panel-title">Orders<span class="chip">${orders.length}</span></span></div>
+      <div class="tbl-wrap"><table><thead><tr><th>PO</th><th>PO Date</th><th>Product</th><th>Qty</th><th>Total</th><th>Month</th><th>ETD</th><th>Status</th><th>On-time</th></tr></thead><tbody>
+      ${orders.length?orders.map(o=>`<tr><td>${o.po}</td><td>${o.poDate}</td><td>${o.product}</td><td>${o.qty}</td><td>$${o.total.toLocaleString()}</td><td>${o.salesMonth}</td><td>${o.etd}</td><td>${badge(o.status)}</td><td>${badge(o.onTime)}</td></tr>`).join(''):'<tr><td colspan="9" class="empty-state">No orders</td></tr>'}
+      </tbody></table></div>
+    </div>
+    <div class="panel" style="margin-bottom:14px">
+      <div class="panel-header"><span class="panel-title">Products<span class="chip">${products.length}</span></span></div>
+      <div class="tbl-wrap"><table><thead><tr><th>Product</th><th>Category</th><th>Vendor</th><th>Price</th><th>Cost</th><th>Margin</th><th>MOQ</th><th>Lead Time</th><th>HS Code</th></tr></thead><tbody>
+      ${products.length?products.map(p=>{const m=p.price?Math.round((p.price-p.cost)/p.price*100):0;return`<tr><td>${p.product}</td><td>${p.category}</td><td>${p.vendor}</td><td>$${p.price}</td><td>$${p.cost}</td><td style="color:${m>=0?'#1a8a55':'#c0392b'}">${m}%</td><td>${p.moq}</td><td>${p.leadTime}d</td><td>${p.hsCode}</td></tr>`;}).join(''):'<tr><td colspan="9" class="empty-state">No products</td></tr>'}
+      </tbody></table></div>
+    </div>
+    <div class="panel">
+      <div class="panel-header"><span class="panel-title">Shipments<span class="chip">${shipments.length}</span></span></div>
+      <div class="tbl-wrap"><table><thead><tr><th>PO</th><th>Product</th><th>Qty</th><th>ETA</th><th>ETD</th><th>Carrier</th><th>Tracking</th><th>Port</th><th>Destination</th><th>Status</th></tr></thead><tbody>
+      ${shipments.length?shipments.map(s=>`<tr><td>${s.po}</td><td>${s.product}</td><td>${s.qty}</td><td>${s.eta}</td><td>${s.etd}</td><td>${s.carrier}</td><td>${s.tracking||'—'}</td><td>${s.portLoading}</td><td>${s.destination}</td><td>${badge(s.status)}</td></tr>`).join(''):'<tr><td colspan="10" class="empty-state">No shipments</td></tr>'}
+      </tbody></table></div>
+    </div>`;
+}
+
+function backToClients(){
+  document.getElementById('clients-list-view').style.display='';
+  document.getElementById('client-detail-view').style.display='none';
+}
+
+function renderOrders(){
+  syncCustomerDropdowns();
+  const q=(document.getElementById('order-search').value||'').toLowerCase();
+  const cust=document.getElementById('order-filter-customer').value;
+  const st=document.getElementById('order-filter-status').value;
+  const mo=document.getElementById('order-filter-month').value;
+  const list=state.orders.filter(o=>(!q||[o.po,o.customer,o.product].some(x=>x.toLowerCase().includes(q)))&&(!cust||o.customer===cust)&&(!st||o.status===st)&&(!mo||o.salesMonth===mo));
+  const tb=document.querySelector('#orders-table tbody');
+  tb.innerHTML=list.length?list.map(o=>`<tr>
+    <td>${o.po}</td><td>${o.poDate}</td><td>${o.customer}</td><td>${o.product}</td>
+    <td>$${o.price}</td><td>${o.qty}</td><td><b>$${o.total.toLocaleString()}</b></td>
+    <td>${o.invoice}</td><td>${o.paymentDate||'—'}</td><td>${o.salesMonth}</td><td>${o.custEta}</td>
+    <td>${o.poToVendor||'—'}</td><td>${o.vendorShip}</td><td>${o.oqc}</td><td>${o.etd}</td>
+    <td>${o.incoterms}</td><td>${badge(o.status)}</td><td>${badge(o.onTime)}</td>
+    <td style="max-width:120px;white-space:normal">${o.remarks||'—'}</td>
+    <td><div style="display:flex;gap:4px"><button class="btn btn-sm" onclick="editItem('order',${o.id})">Edit</button><button class="btn btn-sm btn-del" onclick="deleteItem('order',${o.id})">Del</button></div></td></tr>`).join('')
+    :'<tr><td colspan="20" class="empty-state">No orders found</td></tr>';
+}
+
+function renderProducts(){
+  syncCustomerDropdowns();
+  const cats=[...new Set(state.products.map(p=>p.category).filter(Boolean))];
+  const sel=document.getElementById('prod-filter-cat');
+  const cur=sel.value;
+  sel.innerHTML='<option value="">All Categories</option>'+cats.map(c=>`<option${cur===c?' selected':''}>${c}</option>`).join('');
+  const q=(document.getElementById('prod-search').value||'').toLowerCase();
+  const cust=document.getElementById('prod-filter-customer').value;
+  const cat=sel.value;
+  const list=state.products.filter(p=>(!q||[p.product,p.customer,p.vendor].some(x=>x.toLowerCase().includes(q)))&&(!cust||p.customer===cust)&&(!cat||p.category===cat));
+  const tb=document.querySelector('#products-table tbody');
+  tb.innerHTML=list.length?list.map(p=>{
+    const m=p.price?Math.round((p.price-p.cost)/p.price*100):0;
+    return`<tr><td>${p.product}</td><td>${p.category}</td><td>${p.customer}</td><td>${p.vendor}</td>
+      <td>$${p.price}</td><td>$${p.cost}</td><td style="color:${m>=0?'#1a8a55':'#c0392b'};font-weight:500">${m}%</td>
+      <td>${p.moq}</td><td>${p.leadTime}d</td><td>${p.size}</td><td>${p.weight}</td>
+      <td>${p.hsCode}</td><td>${p.origin}</td>
+      <td><div style="display:flex;gap:4px"><button class="btn btn-sm" onclick="editItem('product',${p.id})">Edit</button><button class="btn btn-sm btn-del" onclick="deleteItem('product',${p.id})">Del</button></div></td></tr>`;
+  }).join(''):'<tr><td colspan="14" class="empty-state">No products found</td></tr>';
+}
+
+function renderShipping(){
+  syncCustomerDropdowns();
+  const q=(document.getElementById('ship-search').value||'').toLowerCase();
+  const cust=document.getElementById('ship-filter-customer').value;
+  const st=document.getElementById('ship-filter-status').value;
+  const list=state.shipping.filter(s=>(!q||[s.po,s.product,s.carrier,s.customer].some(x=>x.toLowerCase().includes(q)))&&(!cust||s.customer===cust)&&(!st||s.status===st));
+  const tb=document.querySelector('#shipping-table tbody');
+  tb.innerHTML=list.length?list.map(s=>`<tr>
+    <td>${s.po}</td><td>${s.customer}</td><td>${s.product}</td><td>${s.qty}</td><td><b>$${s.total.toLocaleString()}</b></td>
+    <td>${s.eta}</td><td>${s.etd}</td><td>${s.carrier}</td><td>${s.tracking||'—'}</td>
+    <td>${s.portLoading}</td><td>${s.destination}</td><td>${badge(s.status)}</td>
+    <td><div style="display:flex;gap:4px"><button class="btn btn-sm" onclick="editItem('shipping',${s.id})">Edit</button><button class="btn btn-sm btn-del" onclick="deleteItem('shipping',${s.id})">Del</button></div></td></tr>`).join('')
+    :'<tr><td colspan="13" class="empty-state">No shipments found</td></tr>';
+}
+
+function renderPresent(){
+  syncCustomerDropdowns();
+  const cust=document.getElementById('present-filter-customer').value;
+  const st=document.getElementById('present-filter').value;
+  const list=state.shipping.filter(s=>(!cust||s.customer===cust)&&(!st||s.status===st));
+  document.getElementById('present-date').textContent='Generated: '+new Date().toLocaleDateString('en-US',{year:'numeric',month:'long',day:'numeric'});
+  document.querySelector('#present-table tbody').innerHTML=list.map(s=>`<tr><td>${s.po}</td><td>${s.customer}</td><td>${s.product}</td><td>${s.qty}</td><td>$${s.total.toLocaleString()}</td><td>${s.eta}</td><td>${s.etd}</td><td>${s.carrier}</td><td>${s.portLoading}</td><td>${s.destination}</td><td>${badge(s.status)}</td></tr>`).join('')||'<tr><td colspan="11" class="empty-state">No shipments</td></tr>';
+}
+
+function switchShipTab(t){
+  document.getElementById('ship-manage').style.display=t==='manage'?'':'none';
+  document.getElementById('ship-present').style.display=t==='present'?'':'none';
+  document.getElementById('tab-manage').classList.toggle('active',t==='manage');
+  document.getElementById('tab-present').classList.toggle('active',t==='present');
+}
+
+function openModal(type,data){
+  state.editType=type;
+  const mc=document.getElementById('modal-content');
+  if(type==='order')mc.innerHTML=orderForm(data);
+  if(type==='product')mc.innerHTML=productForm(data);
+  if(type==='shipping')mc.innerHTML=shippingForm(data);
+  document.getElementById('modal-overlay').classList.add('open');
+}
+function editItem(type,id){
+  const map={order:state.orders,product:state.products,shipping:state.shipping};
+  const item=map[type].find(x=>x.id===id);if(!item)return;
+  state.editId=id;openModal(type,item);
+}
+function deleteItem(type,id){
+  if(!confirm('Delete this record?'))return;
+  const map={order:'orders',product:'products',shipping:'shipping'};
+  state[map[type]]=state[map[type]].filter(x=>x.id!==id);
+  if(type==='order'){renderOrders();renderDashboard();}
+  if(type==='product')renderProducts();
+  if(type==='shipping'){renderShipping();renderPresent();}
+  syncCustomerDropdowns();
+}
+function closeModal(){document.getElementById('modal-overlay').classList.remove('open');state.editId=null;state.editType=null;}
+document.getElementById('modal-overlay').onclick=function(e){if(e.target===this)closeModal();}
+
+function saveOrder(){
+  const g=id=>document.getElementById(id).value;
+  const qty=parseInt(g('o-qty'))||0,price=parseFloat(g('o-price'))||0;
+  const obj={po:g('o-po'),poDate:g('o-podate'),customer:g('o-customer'),product:g('o-product'),price,qty,total:qty*price,invoice:g('o-invoice'),paymentDate:g('o-paydate'),salesMonth:g('o-salesmonth'),custEta:g('o-custeta'),poToVendor:g('o-povendor'),vendorShip:g('o-vendorship'),oqc:g('o-oqc'),etd:g('o-etd'),incoterms:g('o-incoterms'),status:g('o-status'),onTime:g('o-ontime'),remarks:g('o-remarks')};
+  if(state.editId)Object.assign(state.orders.find(x=>x.id===state.editId),obj);
+  else{obj.id=state.nextId.orders++;state.orders.push(obj);}
+  closeModal();renderOrders();renderDashboard();syncCustomerDropdowns();
+}
+function saveProduct(){
+  const g=id=>document.getElementById(id).value;
+  const obj={product:g('p-product'),category:g('p-category'),customer:g('p-customer'),vendor:g('p-vendor'),price:parseFloat(g('p-price'))||0,cost:parseFloat(g('p-cost'))||0,moq:parseInt(g('p-moq'))||0,leadTime:parseInt(g('p-leadtime'))||0,size:g('p-size'),weight:g('p-weight'),hsCode:g('p-hscode'),origin:g('p-origin')};
+  if(state.editId)Object.assign(state.products.find(x=>x.id===state.editId),obj);
+  else{obj.id=state.nextId.products++;state.products.push(obj);}
+  closeModal();renderProducts();syncCustomerDropdowns();
+}
+function saveShipping(){
+  const g=id=>document.getElementById(id).value;
+  const obj={po:g('s-po'),customer:g('s-customer'),product:g('s-product'),qty:parseInt(g('s-qty'))||0,total:parseFloat(g('s-total'))||0,eta:g('s-eta'),etd:g('s-etd'),carrier:g('s-carrier'),tracking:g('s-tracking'),portLoading:g('s-portloading'),destination:g('s-dest'),status:g('s-status')};
+  if(state.editId)Object.assign(state.shipping.find(x=>x.id===state.editId),obj);
+  else{obj.id=state.nextId.shipping++;state.shipping.push(obj);}
+  closeModal();renderShipping();renderPresent();syncCustomerDropdowns();
+}
+
+const v=val=>val||'';
+const MONTHS=['January','February','March','April','May','June','July','August','September','October','November','December'];
+const INC=['FOB','CIF','EXW','DDP','FCA','CFR'];
+
+function custDatalist(id){return`<datalist id="${id}">${allCustomers().map(c=>`<option>${c}</option>`).join('')}</datalist>`;}
+
+function orderForm(d){return`<h3>${d?'Edit':'New'} Order</h3><div class="form-grid">
+  <div class="form-group"><label>PO Number</label><input id="o-po" value="${v(d?.po)}"></div>
+  <div class="form-group"><label>PO Date</label><input id="o-podate" type="date" value="${v(d?.poDate)}"></div>
+  <div class="form-group"><label>Customer</label><input id="o-customer" value="${v(d?.customer)}" list="cl1">${custDatalist('cl1')}</div>
+  <div class="form-group"><label>Product</label><input id="o-product" value="${v(d?.product)}"></div>
+  <div class="form-group"><label>Price ($)</label><input id="o-price" type="number" value="${v(d?.price)}"></div>
+  <div class="form-group"><label>Qty</label><input id="o-qty" type="number" value="${v(d?.qty)}"></div>
+  <div class="form-group"><label>Invoice No.</label><input id="o-invoice" value="${v(d?.invoice)}"></div>
+  <div class="form-group"><label>Payment Date</label><input id="o-paydate" type="date" value="${v(d?.paymentDate)}"></div>
+  <div class="form-group"><label>Sales Month</label><select id="o-salesmonth">${MONTHS.map(m=>`<option${d?.salesMonth===m?' selected':''}>${m}</option>`).join('')}</select></div>
+  <div class="form-group"><label>Customer ETA</label><input id="o-custeta" value="${v(d?.custEta)}"></div>
+  <div class="form-group"><label>PO to Vendor</label><input id="o-povendor" value="${v(d?.poToVendor)}"></div>
+  <div class="form-group"><label>Vendor Ship Date</label><input id="o-vendorship" value="${v(d?.vendorShip)}"></div>
+  <div class="form-group"><label>OQC</label><input id="o-oqc" value="${v(d?.oqc)}"></div>
+  <div class="form-group"><label>ETD</label><input id="o-etd" value="${v(d?.etd)}"></div>
+  <div class="form-group"><label>Incoterms</label><select id="o-incoterms">${INC.map(t=>`<option${d?.incoterms===t?' selected':''}>${t}</option>`).join('')}</select></div>
+  <div class="form-group"><label>Status</label><select id="o-status"><option${d?.status==='Shipped'?' selected':''}>Shipped</option><option${d?.status==='Not Yet'?' selected':''}>Not Yet</option><option${d?.status==='In Transit'?' selected':''}>In Transit</option></select></div>
+  <div class="form-group"><label>On-time</label><select id="o-ontime"><option${d?.onTime==='Yes'?' selected':''}>Yes</option><option${d?.onTime==='No'?' selected':''}>No</option></select></div>
+  <div class="form-group full"><label>Remarks</label><textarea id="o-remarks" rows="2">${v(d?.remarks)}</textarea></div>
+</div><div class="modal-footer"><button class="btn" onclick="closeModal()">Cancel</button><button class="btn btn-primary" onclick="saveOrder()">Save Order</button></div>`;}
+
+function productForm(d){return`<h3>${d?'Edit':'New'} Product</h3><div class="form-grid">
+  <div class="form-group"><label>Product Name</label><input id="p-product" value="${v(d?.product)}"></div>
+  <div class="form-group"><label>Category</label><input id="p-category" value="${v(d?.category)}"></div>
+  <div class="form-group"><label>Customer</label><input id="p-customer" value="${v(d?.customer)}" list="cl2">${custDatalist('cl2')}</div>
+  <div class="form-group"><label>Vendor</label><input id="p-vendor" value="${v(d?.vendor)}"></div>
+  <div class="form-group"><label>Price ($)</label><input id="p-price" type="number" value="${v(d?.price)}"></div>
+  <div class="form-group"><label>Cost ($)</label><input id="p-cost" type="number" value="${v(d?.cost)}"></div>
+  <div class="form-group"><label>MOQ</label><input id="p-moq" type="number" value="${v(d?.moq)}"></div>
+  <div class="form-group"><label>Lead Time (days)</label><input id="p-leadtime" type="number" value="${v(d?.leadTime)}"></div>
+  <div class="form-group"><label>Size</label><input id="p-size" value="${v(d?.size)}"></div>
+  <div class="form-group"><label>Weight</label><input id="p-weight" value="${v(d?.weight)}"></div>
+  <div class="form-group"><label>HS Code</label><input id="p-hscode" value="${v(d?.hsCode)}"></div>
+  <div class="form-group"><label>Country of Origin</label><input id="p-origin" value="${v(d?.origin)}"></div>
+</div><div class="modal-footer"><button class="btn" onclick="closeModal()">Cancel</button><button class="btn btn-primary" onclick="saveProduct()">Save Product</button></div>`;}
+
+function shippingForm(d){return`<h3>${d?'Edit':'New'} Shipment</h3><div class="form-grid">
+  <div class="form-group"><label>PO Number</label><input id="s-po" value="${v(d?.po)}"></div>
+  <div class="form-group"><label>Customer</label><input id="s-customer" value="${v(d?.customer)}" list="cl3">${custDatalist('cl3')}</div>
+  <div class="form-group"><label>Product</label><input id="s-product" value="${v(d?.product)}"></div>
+  <div class="form-group"><label>Qty</label><input id="s-qty" type="number" value="${v(d?.qty)}"></div>
+  <div class="form-group"><label>Total ($)</label><input id="s-total" type="number" value="${v(d?.total)}"></div>
+  <div class="form-group"><label>ETA</label><input id="s-eta" type="date" value="${v(d?.eta)}"></div>
+  <div class="form-group"><label>ETD</label><input id="s-etd" type="date" value="${v(d?.etd)}"></div>
+  <div class="form-group"><label>Carrier / Forwarder</label><input id="s-carrier" value="${v(d?.carrier)}"></div>
+  <div class="form-group"><label>Tracking No.</label><input id="s-tracking" value="${v(d?.tracking)}"></div>
+  <div class="form-group"><label>Port of Loading</label><input id="s-portloading" value="${v(d?.portLoading)}"></div>
+  <div class="form-group"><label>Destination</label><input id="s-dest" value="${v(d?.destination)}"></div>
+  <div class="form-group"><label>Status</label><select id="s-status"><option${d?.status==='Pending'?' selected':''}>Pending</option><option${d?.status==='In Transit'?' selected':''}>In Transit</option><option${d?.status==='Delivered'?' selected':''}>Delivered</option></select></div>
+</div><div class="modal-footer"><button class="btn" onclick="closeModal()">Cancel</button><button class="btn btn-primary" onclick="saveShipping()">Save Shipment</button></div>`;}
+
+renderDashboard();
+</script>
+</body>
+</html>
