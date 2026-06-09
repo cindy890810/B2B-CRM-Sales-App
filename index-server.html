@@ -199,18 +199,7 @@ tr:hover td{background:#f7faff}
       <div class="kpi-grid" id="dash-cards"></div>
       <!-- Shipping Alerts on Dashboard -->
       <div id="dash-alerts" style="margin-bottom:12px"></div>
-      <div class="panel">
-        <div class="panel-header">
-          <span class="panel-title">Quick Import</span>
-          <span style="font-size:11px;color:#8a9bb0">All imports cross-sync Orders ↔ Products ↔ Shipping ↔ Clients</span>
-        </div>
-        <div style="padding:12px 14px;display:flex;gap:9px;flex-wrap:wrap">
-          <button class="btn btn-import" style="flex:1;min-width:110px;padding:10px;text-align:center;border-radius:10px;border:1px dashed #b8d4f0" onclick="openSmartImport()"><div style="font-size:17px;margin-bottom:3px">🧠</div><div style="font-weight:500;font-size:12px;color:#185FA5">Smart Import</div><div style="font-size:11px;color:#8a9bb0;margin-top:1px">One file → all modules</div></button>
-          <button class="btn btn-import" style="flex:1;min-width:110px;padding:10px;text-align:center;border-radius:10px;border:1px dashed #b8d4f0" onclick="openImport('order')"><div style="font-size:17px;margin-bottom:3px">📦</div><div style="font-weight:500;font-size:12px;color:#185FA5">Orders</div><div style="font-size:11px;color:#8a9bb0;margin-top:1px">+ auto-sync all</div></button>
-          <button class="btn btn-import" style="flex:1;min-width:110px;padding:10px;text-align:center;border-radius:10px;border:1px dashed #b8d4f0" onclick="openImport('product')"><div style="font-size:17px;margin-bottom:3px">🗂️</div><div style="font-weight:500;font-size:12px;color:#185FA5">Products</div><div style="font-size:11px;color:#8a9bb0;margin-top:1px">+ auto-sync all</div></button>
-          <button class="btn btn-import" style="flex:1;min-width:110px;padding:10px;text-align:center;border-radius:10px;border:1px dashed #b8d4f0" onclick="openImport('shipping')"><div style="font-size:17px;margin-bottom:3px">🚢</div><div style="font-weight:500;font-size:12px;color:#185FA5">Shipping</div><div style="font-size:11px;color:#8a9bb0;margin-top:1px">+ auto-sync all</div></button>
-        </div>
-      </div>
+
       <div class="panel">
         <div class="panel-header"><span class="panel-title">Revenue by Customer (USD)</span></div>
         <div style="padding:12px 14px;display:flex;gap:12px;flex-wrap:wrap" id="rev-breakdown"></div>
@@ -259,19 +248,22 @@ tr:hover td{background:#f7faff}
 
     <!-- Products -->
     <div id="page-products" class="content" style="display:none">
-      <div class="panel">
-        <div class="panel-header">
-          <div class="filter-row">
-            <input class="search-box" id="prod-search" placeholder="Search..." oninput="renderProducts()">
-            <select class="filter-select" id="prod-filter-customer" onchange="renderProducts()"><option value="">All Customers</option></select>
+      <div id="prod-list-view">
+        <div class="panel">
+          <div class="panel-header">
+            <div class="filter-row">
+              <input class="search-box" id="prod-search" placeholder="Search..." oninput="renderProducts()">
+              <select class="filter-select" id="prod-filter-customer" onchange="renderProducts()"><option value="">All Customers</option></select>
+            </div>
+            <div class="btn-group">
+              <button class="btn btn-import" onclick="openImport('product')">⬆ Import</button>
+              <button class="btn btn-primary" onclick="openModal('product')">+ Add</button>
+            </div>
           </div>
-          <div class="btn-group">
-            <button class="btn btn-import" onclick="openImport('product')">⬆ Import</button>
-            <button class="btn btn-primary" onclick="openModal('product')">+ Add</button>
-          </div>
+          <div class="tbl-wrap"><table id="products-table"><thead></thead><tbody></tbody></table></div>
         </div>
-        <div class="tbl-wrap"><table id="products-table"><thead></thead><tbody></tbody></table></div>
       </div>
+      <div id="prod-detail-view" style="display:none"></div>
     </div>
 
     <!-- Shipping -->
@@ -540,10 +532,24 @@ function syncDropdowns(){
     el.innerHTML='<option value="">All Customers</option>'+cs.map(c=>`<option${cur===c?' selected':''}>${c}</option>`).join('');
   });
 }
+// ── Get best MOQ tier price for an order ──────────────────────────
+function getTierPrice(order){
+  const p=state.products.find(px=>
+    (px.customer||'').toLowerCase()===(order.customer||'').toLowerCase()&&
+    (px.model||'').toLowerCase()===(order.model||'').toLowerCase());
+  if(!p||!p.moqTiers||!p.moqTiers.length) return {unitPriceUSD:order.unitPriceUSD||0,costUSD:0};
+  const sorted=[...p.moqTiers].sort((a,b)=>b.moq-a.moq);
+  const tier=sorted.find(t=>(order.qty||0)>=t.moq)||sorted[sorted.length-1];
+  return {unitPriceUSD:tier.unitPriceUSD||0,costUSD:tier.costUSD||0};
+}
+function orderRevenue(o){const {unitPriceUSD}=getTierPrice(o);return unitPriceUSD*(o.qty||0)||parseFloat(o.salesRevenueUSD)||0;}
+function orderProfit(o){const {unitPriceUSD,costUSD}=getTierPrice(o);return (unitPriceUSD-costUSD)*(o.qty||0);}
+
 function clientStats(name){
   const orders=state.orders.filter(o=>o.customer===name);
   return{
-    revenue:orders.reduce((a,o)=>a+(parseFloat(o.salesRevenueUSD)||0),0),
+    revenue:orders.reduce((a,o)=>a+orderRevenue(o),0),
+    profit:orders.reduce((a,o)=>a+orderProfit(o),0),
     orders:orders.length,
     shipments:state.shipping.filter(s=>s.customer===name).length,
     products:state.products.filter(p=>p.customer===name).length
@@ -619,15 +625,16 @@ function renderDashboard(){
   const cf=document.getElementById('dash-cust-filter').value;
   const fO=cf?state.orders.filter(o=>o.customer===cf):state.orders;
   const fS=cf?state.shipping.filter(s=>s.customer===cf):state.shipping;
-  const rev=fO.reduce((a,o)=>a+(parseFloat(o.salesRevenueUSD)||0),0);
+  const rev=fO.reduce((a,o)=>a+orderRevenue(o),0);
+  const profit=fO.reduce((a,o)=>a+orderProfit(o),0);
   const shipped=fO.filter(o=>o.shippingStatus==='Shipped').length;
   const onTime=fO.filter(o=>o.onTime==='On Time').length;
   const late=fO.filter(o=>o.onTime==='Late').length;
   const alertCount=state.shipping.filter(s=>['warn','danger','late'].includes(getShipAlert(s).level)).length;
   document.getElementById('dash-cards').innerHTML=`
     <div class="kpi-card kpi-accent"><div class="kpi-label">Sales Revenue (USD)</div><div class="kpi-value">${fmtUSD(rev)}</div><div class="kpi-sub">${fO.length} orders${cf?' · '+cf:''}</div></div>
-    <div class="kpi-card kpi-green"><div class="kpi-label">Shipped Orders</div><div class="kpi-value">${shipped}</div><div class="kpi-sub">of ${fO.length} total</div></div>
-    <div class="kpi-card kpi-amber"><div class="kpi-label">On-time Rate</div><div class="kpi-value">${(onTime+late)>0?Math.round(onTime/(onTime+late)*100):0}%</div><div class="kpi-sub">${onTime} on time · ${late} late</div></div>
+    <div class="kpi-card kpi-green"><div class="kpi-label">Gross Profit (USD)</div><div class="kpi-value">${fmtUSD(profit)}</div><div class="kpi-sub">Margin: ${rev>0?((profit/rev)*100).toFixed(1):0}%</div></div>
+    <div class="kpi-card kpi-amber"><div class="kpi-label">On-time Rate</div><div class="kpi-value">${(onTime+late)>0?Math.round(onTime/(onTime+late)*100):0}%</div><div class="kpi-sub">${shipped} shipped · ${late} late</div></div>
     <div class="kpi-card ${alertCount>0?'kpi-red':'kpi-purple'}"><div class="kpi-label">Delivery Alerts</div><div class="kpi-value">${alertCount}</div><div class="kpi-sub">${alertCount>0?'overdue / approaching':'all clear'}</div></div>`;
   document.querySelector('#dash-orders-table tbody').innerHTML=
     fO.slice().reverse().slice(0,8).map(o=>
@@ -651,6 +658,7 @@ function renderClients(){
         <div class="client-name">${c}</div>
         <div class="client-stats">
           <div class="cstat"><div class="cstat-val">${fmtUSD(s.revenue)}</div><div class="cstat-lbl">Revenue</div></div>
+          <div class="cstat"><div class="cstat-val">${fmtUSD(s.profit)}</div><div class="cstat-lbl">Profit</div></div>
           <div class="cstat"><div class="cstat-val">${s.orders}</div><div class="cstat-lbl">Orders</div></div>
           <div class="cstat"><div class="cstat-val">${s.shipments}</div><div class="cstat-lbl">Shipments</div></div>
           <div class="cstat"><div class="cstat-val">${s.products}</div><div class="cstat-lbl">Products</div></div>
@@ -781,23 +789,30 @@ function switchShipTab(t){
 function isBlank(v){return v===undefined||v===null||v===''||v==='—'||v===0;}
 
 function syncAllModules(){
-  // ── Orders → Products ─────────────────────────────────────────
+  // ── Orders → Products (auto-add missing products) ─────────────
   state.orders.forEach(o=>{
-    if(!o.customer&&!o.project&&!o.model)return;
+    if(!o.customer&&!o.model)return;
     const key=(o.customer||'').toLowerCase()+'|'+(o.project||'').toLowerCase()+'|'+(o.model||'').toLowerCase();
     let p=state.products.find(p=>
       ((p.customer||'').toLowerCase()+'|'+(p.project||'').toLowerCase()+'|'+(p.model||'').toLowerCase())===key);
     if(!p){
+      // Auto-add product from order — create with MOQ tier from order price
       p={id:state.nextId.products++,customer:o.customer||'',project:o.project||'',
         model:o.model||'',supplier:o.supplier||'',unitPriceUSD:o.unitPriceUSD||0,
-        costUSD:0,packagingDetails:'',moq:0,leadTime:0,hsCode:'',origin:''};
+        costUSD:0,packagingDetails:'',moq:o.qty||0,leadTime:0,hsCode:'',origin:'',
+        moqTiers:o.unitPriceUSD?[{moq:o.qty||0,unitPriceUSD:o.unitPriceUSD||0,costUSD:0}]:[]};
       state.products.push(p);
     } else {
-      if(isBlank(p.customer)  &&o.customer)     p.customer=o.customer;
-      if(isBlank(p.project)   &&o.project)      p.project=o.project;
-      if(isBlank(p.model)     &&o.model)        p.model=o.model;
-      if(isBlank(p.supplier)  &&o.supplier)     p.supplier=o.supplier;
-      if(isBlank(p.unitPriceUSD)&&o.unitPriceUSD) p.unitPriceUSD=o.unitPriceUSD;
+      if(isBlank(p.customer)    && o.customer)    p.customer=o.customer;
+      if(isBlank(p.project)     && o.project)     p.project=o.project;
+      if(isBlank(p.model)       && o.model)       p.model=o.model;
+      if(isBlank(p.supplier)    && o.supplier)    p.supplier=o.supplier;
+      if(isBlank(p.unitPriceUSD)&& o.unitPriceUSD)p.unitPriceUSD=o.unitPriceUSD;
+      // If product has MOQ tiers, check if this order's qty/price adds a new tier
+      if(p.moqTiers&&o.unitPriceUSD&&o.qty){
+        const existing=p.moqTiers.find(t=>t.moq===o.qty);
+        if(!existing)p.moqTiers.push({moq:o.qty,unitPriceUSD:o.unitPriceUSD,costUSD:p.costUSD||0});
+      }
     }
   });
 
